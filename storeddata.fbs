@@ -1,0 +1,38 @@
+file_identifier "SDFB";
+
+table Bool {
+    value: bool;
+}
+
+table Uint8 {
+    value: uint8;
+}
+
+table Int64 {
+    value: int64;
+}
+
+table String {
+    value: string;
+}
+
+union StoredVariants {
+    Bool,
+    Uint8,
+    Int64,
+    String
+}
+
+struct Range {
+    start: uint64;
+    end: uint64;
+}
+
+table StoredData {
+    variant: StoredVariants;
+    opt_bool: bool;
+    vec_strs: [string];
+    range: Range;
+}
+
+root_type StoredData;
