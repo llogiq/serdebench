@@ -3,7 +3,7 @@
 [[package]]
 name = "abomonation"
 version = "0.7.3"
-source = "git+https://github.com/llogiq/abomonation?branch=the-abomonable-range#a75d45356383b107be68cdd61135f3f328488f55"
+source = "git+https://github.com/TimelyDataflow/abomonation#c2b23534549a5aa09a70bb471379bd436a2f27e1"
 
 [[package]]
 name = "abomonation_derive"
