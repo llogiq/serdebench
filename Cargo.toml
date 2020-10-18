@@ -17,7 +17,7 @@ serde_cbor = "0.11.1"
 serde_yaml = "0.8.13"
 flexbuffers = "0.1.1"
 ron = "0.6.0"
-abomonation = { git = "https://github.com/llogiq/abomonation", branch = "the-abomonable-range" }
+abomonation = { git = "https://github.com/TimelyDataflow/abomonation" }
 abomonation_derive = "0.5.0"
 capnp = "0.13.3"
 
