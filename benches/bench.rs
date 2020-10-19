@@ -173,7 +173,13 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("sr.capnproto.unpacked", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            let mut message = ::capnp::message::Builder::new_default();
+
+            // Allocate just enough to fit the message. Note that we could optimize this even
+            // more by writing a custom implementation of `capnp::message::Allocator` that writes
+            // directly to `buffer`.
+            let allocator = ::capnp::message::HeapAllocator::new().first_segment_words(14);
+
+            let mut message = ::capnp::message::Builder::new(allocator);
             let mut stored_data = message.init_root::<storeddata_capnp::stored_data::Builder>();
             stored_data.reborrow().init_variant().set_signy(42);
             stored_data
@@ -181,16 +187,20 @@ fn compare_serde(c: &mut Criterion) {
                 .init_vec_strs(1)
                 .set(0, "Hello, Rust");
             stored_data.reborrow().init_opt_bool().set_value(false);
-            stored_data.init_range().set_start(0).set_end(42);
+            let mut range = stored_data.init_range();
+            range.set_start(0);
+            range.set_end(42);
             capnp::serialize::write_message(black_box(&mut buffer), &message).unwrap();
         })
     });
     println!("capnproto.unpacked: {} bytes", buffer.len());
     group.bench_function("de.capnproto.unpacked", |b| {
         b.iter(|| {
-            let message_reader =
-                capnp::serialize::read_message(black_box(buffer.as_slice()), Default::default())
-                    .unwrap();
+            let message_reader = capnp::serialize::read_message_from_flat_slice(
+                &mut black_box(buffer.as_slice()),
+                Default::default(),
+            )
+            .unwrap();
             let sd = message_reader
                 .get_root::<storeddata_capnp::stored_data::Reader>()
                 .unwrap();
@@ -204,15 +214,22 @@ fn compare_serde(c: &mut Criterion) {
                     Stringy(stringy.unwrap().into())
                 }
             };
+
             let vec_strs: Vec<String> = sd
                 .get_vec_strs()
                 .unwrap()
                 .into_iter()
                 .map(|v| v.unwrap().into())
                 .collect();
+
+            let opt_bool = match sd.get_opt_bool().which().unwrap() {
+                storeddata_capnp::stored_data::opt_bool::None(()) => None,
+                storeddata_capnp::stored_data::opt_bool::Value(b) => Some(b),
+            };
+
             StoredData {
                 variant,
-                opt_bool: sd.get_opt_bool().ok().map(|reader| reader.get_value()),
+                opt_bool,
                 vec_strs,
                 range: (range.get_start() as usize)..(range.get_end() as usize),
             }
@@ -221,7 +238,10 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("sr.capnproto.packed", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            let mut message = ::capnp::message::Builder::new_default();
+            // Allocate just enough to fit the message.
+            let allocator = ::capnp::message::HeapAllocator::new().first_segment_words(14);
+
+            let mut message = ::capnp::message::Builder::new(allocator);
             let mut stored_data = message.init_root::<storeddata_capnp::stored_data::Builder>();
             let mut variant = stored_data.reborrow().init_variant();
             variant.set_signy(42);
@@ -262,9 +282,15 @@ fn compare_serde(c: &mut Criterion) {
                 .into_iter()
                 .map(|v| v.unwrap().into())
                 .collect();
+
+            let opt_bool = match sd.get_opt_bool().which().unwrap() {
+                storeddata_capnp::stored_data::opt_bool::None(()) => None,
+                storeddata_capnp::stored_data::opt_bool::Value(b) => Some(b),
+            };
+
             StoredData {
                 variant,
-                opt_bool: sd.get_opt_bool().ok().map(|reader| reader.get_value()),
+                opt_bool,
                 vec_strs,
                 range: (range.get_start() as usize)..(range.get_end() as usize),
             }

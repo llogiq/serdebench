@@ -9,9 +9,17 @@ struct StoredData {
         signy @2 :Int64;
         stringy @3 :Text;
     }
-    optBool @4 :OptionBool; # We don't store bool directly, because primitive types are given a default (0) value when not present
-    vecStrs @5 :List(Text);
-    range @6 :Range;
+
+    # One way to make a primitive field optional is to wrap it in a union like this.
+    # Alternatively, we could move the field to a substruct, but that would take
+    # more space and require an extra pointer indirection.
+    optBool :union {
+      none @4 :Void;
+      value @5 :Bool;
+    }
+
+    vecStrs @6 :List(Text);
+    range @7 :Range;
 }
 
 struct Range {
@@ -19,7 +27,3 @@ struct Range {
     end @1 :UInt64;
 }
 
-# All struct types are optional when used as members of another struct
-struct OptionBool {
-    value @0 :Bool;
-}
