@@ -173,13 +173,13 @@ fn compare_serde(c: &mut Criterion) {
 
     // Preallocate a buffer that can be reused in all iterations.
     let mut scratch_words = capnp::Word::allocate_zeroed_vec(100);
-    let mut allocator = Some(capnp::message::ScratchSpaceHeapAllocator::new(
+    let mut allocator = capnp::message::ScratchSpaceHeapAllocator::new(
         capnp::Word::words_to_bytes_mut(&mut scratch_words[..]),
-    ));
+    );
     group.bench_function("sr.capnproto.unpacked", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            let mut message = ::capnp::message::Builder::new(allocator.take().unwrap());
+            let mut message = ::capnp::message::Builder::new(&mut allocator);
             let mut stored_data = message.init_root::<storeddata_capnp::stored_data::Builder>();
             stored_data.reborrow().init_variant().set_signy(42);
             stored_data
@@ -191,9 +191,6 @@ fn compare_serde(c: &mut Criterion) {
             range.set_start(0);
             range.set_end(42);
             capnp::serialize::write_message(black_box(&mut buffer), &message).unwrap();
-
-            // Return the allocator to allow reuse.
-            allocator = Some(message.into_allocator());
         })
     });
     println!("capnproto.unpacked: {} bytes", buffer.len());
@@ -241,7 +238,7 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("sr.capnproto.packed", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            let mut message = ::capnp::message::Builder::new(allocator.take().unwrap());
+            let mut message = ::capnp::message::Builder::new(&mut allocator);
             let mut stored_data = message.init_root::<storeddata_capnp::stored_data::Builder>();
             let mut variant = stored_data.reborrow().init_variant();
             variant.set_signy(42);
@@ -253,9 +250,6 @@ fn compare_serde(c: &mut Criterion) {
             range.set_start(0);
             range.set_end(42);
             capnp::serialize_packed::write_message(black_box(&mut buffer), &message).unwrap();
-
-            // Return the allocator to allow reuse.
-            allocator = Some(message.into_allocator());
         })
     });
     println!("capnproto.packed: {} bytes", buffer.len());
