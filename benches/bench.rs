@@ -1,3 +1,5 @@
+use std::iter;
+
 use abomonation_derive::Abomonation;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,9 @@ mod flat;
 #[path = "../storeddata_capnp.rs"]
 mod storeddata_capnp;
 
-#[derive(Abomonation, Serialize, Deserialize)]
+#[derive(
+    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize,
+)]
 pub enum StoredVariants {
     YesNo(bool),
     Small(u8),
@@ -18,7 +22,9 @@ pub enum StoredVariants {
     Stringy(String),
 }
 
-#[derive(Abomonation, Serialize, Deserialize)]
+#[derive(
+    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize,
+)]
 pub struct StoredData {
     pub variant: StoredVariants,
     pub opt_bool: Option<bool>,
@@ -45,6 +51,31 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("de.json", |b| {
         b.iter(|| serde_json::from_slice::<'_, StoredData>(black_box(&buffer)))
     });
+    group.bench_function("sr.simd-json", |b| {
+        use simd_json_derive::Serialize;
+        b.iter(|| {
+            black_box(&mut buffer).clear();
+            value.json_write(black_box(&mut buffer))
+        })
+    });
+    println!("simd-json: {} bytes", buffer.len());
+    let mut abobuf = buffer.clone();
+    group.bench_function("de.simd-json", |b| {
+        use simd_json::AlignedBuf;
+        use simd_json_derive::Deserialize;
+        let mut string_buffer = Vec::with_capacity(4096);
+        let mut input_buffer = AlignedBuf::with_capacity(4096);
+        b.iter(|| {
+            abobuf.clone_from(&buffer);
+            black_box(StoredData::from_slice_with_buffers(
+                black_box(&mut abobuf),
+                &mut input_buffer,
+                &mut string_buffer,
+            ))
+            .unwrap();
+        })
+    });
+    println!("simd-json: {} bytes", buffer.len());
     group.bench_function("sr.yaml", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
@@ -293,6 +324,7 @@ fn compare_serde(c: &mut Criterion) {
             }
         })
     });
+
     group.bench_function("sr.abomonation", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
