@@ -1,7 +1,8 @@
-use std::iter;
+use std::io::Cursor;
 
 use abomonation_derive::Abomonation;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use prost::Message;
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code, unused_imports)]
@@ -11,6 +12,10 @@ mod flat;
 #[allow(dead_code, unused_imports)]
 #[path = "../storeddata_capnp.rs"]
 mod storeddata_capnp;
+
+pub mod proto3 {
+    include!(concat!(env!("OUT_DIR"), "/proto3.rs"));
+}
 
 #[derive(
     Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize,
@@ -325,6 +330,54 @@ fn compare_serde(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("sr.proto3", |b| {
+        b.iter(|| {
+            black_box(&mut buffer).clear();
+            let mut storeddata = proto3::StoredData::default();
+            storeddata.variant = Some(match &value.variant {
+                StoredVariants::YesNo(v) => proto3::stored_data::Variant::Yesno(*v),
+                StoredVariants::Small(v) => proto3::stored_data::Variant::Small((*v).into()),
+                StoredVariants::Signy(v) => proto3::stored_data::Variant::Signy(*v),
+                StoredVariants::Stringy(v) => proto3::stored_data::Variant::Stringy(v.clone()),
+            });
+            storeddata.opt_bool = match value.opt_bool {
+                Some(v) => Some(proto3::stored_data::OptBool::Value(v)),
+                None => None
+            };
+            storeddata.vec_strs = value.vec_strs.clone();
+            storeddata.range = Some(
+                proto3::Range {
+                    start: value.range.start as u64,
+                    end: value.range.end as u64
+                }
+            );
+            storeddata.encode(black_box(&mut buffer)).unwrap();
+        })
+    });
+    println!("proto3: {} bytes", buffer.len());
+    group.bench_function("de.proto3", |b| {
+        b.iter(|| {
+            let storeddata = proto3::StoredData::decode(&mut Cursor::new(&buffer)).unwrap();
+            let variant = match &storeddata.variant.as_ref().unwrap() {
+                proto3::stored_data::Variant::Yesno(v) => StoredVariants::YesNo(*v),
+                proto3::stored_data::Variant::Small(v) => StoredVariants::Small(*v as u8),
+                proto3::stored_data::Variant::Signy(v) => StoredVariants::Signy(*v),
+                proto3::stored_data::Variant::Stringy(v) => StoredVariants::Stringy(v.to_string()),
+            };
+            let opt_bool = match &storeddata.opt_bool.as_ref() {
+                Some(proto3::stored_data::OptBool::Value(v)) => Some(*v),
+                None => None
+            };
+            let range = &storeddata.range.as_ref().unwrap();
+            StoredData {
+                variant: variant,
+                opt_bool: opt_bool,
+                vec_strs: storeddata.vec_strs,
+                range: (range.start as usize)..(range.end as usize)
+            }
+        })
+    });
+
     group.bench_function("sr.abomonation", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
@@ -339,6 +392,7 @@ fn compare_serde(c: &mut Criterion) {
             black_box(abomonation::decode::<StoredData>(black_box(&mut abobuf))).unwrap();
         })
     });
+
     group.finish();
 }
 
