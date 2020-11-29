@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto3;
+
+message Range {
+    uint64 start = 1;
+    uint64 end = 2;
+}
+
+message StoredData {
+    oneof variant {
+        bool yesno = 1;
+        uint32 small = 2;
+        int64 signy = 3;
+        string stringy = 4;
+    }
+    oneof opt_bool {
+        bool value = 5;
+    };
+    repeated string vec_strs = 6;
+    Range range = 7;
+}
+
