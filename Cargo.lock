@@ -98,6 +98,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
 
 [[package]]
+name = "bytecheck"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cb902ec111b0fd48cdb0f7c002b1d0436c229517edfe5f5ca75515979cf41e0"
+dependencies = [
+ "bytecheck_derive",
+ "memoffset 0.6.1",
+]
+
+[[package]]
+name = "bytecheck_derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa69ba251c1734e8f24ed34a3d6f7d03626745f7b460259feaf1cf5ae8f75f41"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -233,7 +254,7 @@ dependencies = [
  "const_fn",
  "crossbeam-utils",
  "lazy_static",
- "memoffset",
+ "memoffset 0.5.6",
  "scopeguard",
 ]
 
@@ -523,6 +544,15 @@ name = "memoffset"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
+name = "memoffset"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "157b4208e3059a8f9e78d559edc658e13df41410cb3ae03979c83130067fdd87"
 dependencies = [
  "autocfg",
 ]
@@ -819,6 +849,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rkyv"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a18d0cbc452b436bdfb20771a68ee9afd4e4ca7b7765be05d26c9fa45a72ae7"
+dependencies = [
+ "bytecheck",
+ "cfg-if 1.0.0",
+ "memoffset 0.6.1",
+ "rkyv_derive",
+ "seahash",
+]
+
+[[package]]
+name = "rkyv_derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eaeb66da0d209d1bf842edf5ab1b4862f360b49069bd372d2f1fb669c39db8e8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "rmp"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -879,6 +933,12 @@ name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
+
+[[package]]
+name = "seahash"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39ee459cae272d224928ca09a1df5406da984f263dc544f9f8bde92a8c3dc916"
 
 [[package]]
 name = "semver"
@@ -955,6 +1015,7 @@ dependencies = [
  "abomonation",
  "abomonation_derive",
  "bincode",
+ "bytecheck",
  "capnp",
  "criterion",
  "flatbuffers",
@@ -962,6 +1023,7 @@ dependencies = [
  "postcard",
  "prost",
  "prost-build",
+ "rkyv",
  "rmp-serde",
  "ron",
  "serde",

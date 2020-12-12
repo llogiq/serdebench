@@ -3,6 +3,8 @@ use std::io::Cursor;
 use abomonation_derive::Abomonation;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use prost::Message;
+use rkyv::Archive;
+use bytecheck::CheckBytes;
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code, unused_imports)]
@@ -18,8 +20,9 @@ pub mod proto3 {
 }
 
 #[derive(
-    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize,
+    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize, Archive,
 )]
+#[archive(derive(CheckBytes))]
 pub enum StoredVariants {
     YesNo(bool),
     Small(u8),
@@ -28,13 +31,14 @@ pub enum StoredVariants {
 }
 
 #[derive(
-    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize,
+    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize, Archive,
 )]
+#[archive(derive(CheckBytes))]
 pub struct StoredData {
     pub variant: StoredVariants,
     pub opt_bool: Option<bool>,
     pub vec_strs: Vec<String>,
-    pub range: std::ops::Range<usize>,
+    pub range: std::ops::Range<u64>,
 }
 
 fn compare_serde(c: &mut Criterion) {
@@ -202,7 +206,7 @@ fn compare_serde(c: &mut Criterion) {
                     .iter()
                     .map(|s| s.into())
                     .collect::<Vec<String>>(),
-                range: (range.start() as usize)..(range.end() as usize),
+                range: (range.start() as u64)..(range.end() as u64),
             }
         })
     });
@@ -267,7 +271,7 @@ fn compare_serde(c: &mut Criterion) {
                 variant,
                 opt_bool,
                 vec_strs,
-                range: (range.get_start() as usize)..(range.get_end() as usize),
+                range: (range.get_start() as u64)..(range.get_end() as u64),
             }
         })
     });
@@ -325,7 +329,7 @@ fn compare_serde(c: &mut Criterion) {
                 variant,
                 opt_bool,
                 vec_strs,
-                range: (range.get_start() as usize)..(range.get_end() as usize),
+                range: (range.get_start() as u64)..(range.get_end() as u64),
             }
         })
     });
@@ -373,7 +377,7 @@ fn compare_serde(c: &mut Criterion) {
                 variant: variant,
                 opt_bool: opt_bool,
                 vec_strs: storeddata.vec_strs,
-                range: (range.start as usize)..(range.end as usize)
+                range: (range.start as u64)..(range.end as u64)
             }
         })
     });
@@ -390,6 +394,31 @@ fn compare_serde(c: &mut Criterion) {
         b.iter(|| unsafe {
             abobuf.clone_from(&buffer);
             black_box(abomonation::decode::<StoredData>(black_box(&mut abobuf))).unwrap();
+        })
+    });
+
+    let mut rkyv_buffer = rkyv::Aligned([0u8; 4096]);
+    let mut rkyv_pos = 0;
+    let mut rkyv_len = 0;
+    group.bench_function("sr.rkyv", |b| {
+        b.iter(|| {
+            use rkyv::{Write, WriteExt};
+
+            black_box(&mut buffer).clear();
+            let mut writer = rkyv::ArchiveBuffer::new(&mut rkyv_buffer);
+            rkyv_pos = writer.archive(&value).unwrap();
+            rkyv_len = writer.pos();
+        })
+    });
+    println!("rkyv: {} bytes", rkyv_len);
+    group.bench_function("de.rkyv (unvalidated)", |b| {
+        b.iter(|| {
+            black_box(unsafe { rkyv::archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos) });
+        })
+    });
+    group.bench_function("de.rkyv (validated)", |b| {
+        b.iter(|| {
+            black_box(rkyv::check_archive::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos).unwrap());
         })
     });
 
