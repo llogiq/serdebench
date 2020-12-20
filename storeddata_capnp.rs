@@ -141,7 +141,7 @@ pub mod stored_data {
         }
     }
 
-    impl<'a> ::capnp::traits::SetPointerBuilder<Builder<'a>> for Reader<'a> {
+    impl<'a> ::capnp::traits::SetPointerBuilder for Reader<'a> {
         fn set_pointer_builder<'b>(
             pointer: ::capnp::private::layout::PointerBuilder<'b>,
             value: Reader<'a>,
@@ -407,7 +407,7 @@ pub mod stored_data {
             }
         }
 
-        impl<'a> ::capnp::traits::SetPointerBuilder<Builder<'a>> for Reader<'a> {
+        impl<'a> ::capnp::traits::SetPointerBuilder for Reader<'a> {
             fn set_pointer_builder<'b>(
                 pointer: ::capnp::private::layout::PointerBuilder<'b>,
                 value: Reader<'a>,
@@ -629,7 +629,7 @@ pub mod stored_data {
             }
         }
 
-        impl<'a> ::capnp::traits::SetPointerBuilder<Builder<'a>> for Reader<'a> {
+        impl<'a> ::capnp::traits::SetPointerBuilder for Reader<'a> {
             fn set_pointer_builder<'b>(
                 pointer: ::capnp::private::layout::PointerBuilder<'b>,
                 value: Reader<'a>,
@@ -819,7 +819,7 @@ pub mod range {
         }
     }
 
-    impl<'a> ::capnp::traits::SetPointerBuilder<Builder<'a>> for Reader<'a> {
+    impl<'a> ::capnp::traits::SetPointerBuilder for Reader<'a> {
         fn set_pointer_builder<'b>(
             pointer: ::capnp::private::layout::PointerBuilder<'b>,
             value: Reader<'a>,
