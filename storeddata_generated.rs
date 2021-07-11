@@ -6,7 +6,7 @@ use std::mem;
 extern crate flatbuffers;
 use self::flatbuffers::EndianScalar;
 
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum StoredVariants {
@@ -61,8 +61,7 @@ pub const ENUM_VALUES_STORED_VARIANTS: [StoredVariants; 5] = [
 ];
 
 #[allow(non_camel_case_types)]
-pub const ENUM_NAMES_STORED_VARIANTS: [&'static str; 5] =
-    ["NONE", "Bool", "Uint8", "Int64", "String"];
+pub const ENUM_NAMES_STORED_VARIANTS: [&str; 5] = ["NONE", "Bool", "Uint8", "Int64", "String"];
 
 pub fn enum_name_stored_variants(e: StoredVariants) -> &'static str {
     let index = e as u8;
@@ -115,16 +114,16 @@ impl<'b> flatbuffers::Push for &'b Range {
 }
 
 impl Range {
-    pub fn new<'a>(_start: u64, _end: u64) -> Self {
+    pub fn new(_start: u64, _end: u64) -> Self {
         Range {
             start_: _start.to_little_endian(),
             end_: _end.to_little_endian(),
         }
     }
-    pub fn start<'a>(&'a self) -> u64 {
+    pub fn start(&self) -> u64 {
         self.start_.from_little_endian()
     }
-    pub fn end<'a>(&'a self) -> u64 {
+    pub fn end(&self) -> u64 {
         self.end_.from_little_endian()
     }
 }
@@ -141,7 +140,7 @@ impl<'a> flatbuffers::Follow<'a> for Bool<'a> {
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
-            _tab: flatbuffers::Table { buf: buf, loc: loc },
+            _tab: flatbuffers::Table { buf, loc },
         }
     }
 }
@@ -214,7 +213,7 @@ impl<'a> flatbuffers::Follow<'a> for Uint8<'a> {
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
-            _tab: flatbuffers::Table { buf: buf, loc: loc },
+            _tab: flatbuffers::Table { buf, loc },
         }
     }
 }
@@ -287,7 +286,7 @@ impl<'a> flatbuffers::Follow<'a> for Int64<'a> {
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
-            _tab: flatbuffers::Table { buf: buf, loc: loc },
+            _tab: flatbuffers::Table { buf, loc },
         }
     }
 }
@@ -360,7 +359,7 @@ impl<'a> flatbuffers::Follow<'a> for String<'a> {
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
-            _tab: flatbuffers::Table { buf: buf, loc: loc },
+            _tab: flatbuffers::Table { buf, loc },
         }
     }
 }
@@ -437,7 +436,7 @@ impl<'a> flatbuffers::Follow<'a> for StoredData<'a> {
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
-            _tab: flatbuffers::Table { buf: buf, loc: loc },
+            _tab: flatbuffers::Table { buf, loc },
         }
     }
 }
@@ -509,7 +508,7 @@ impl<'a> StoredData<'a> {
     #[allow(non_snake_case)]
     pub fn variant_as_bool(&self) -> Option<Bool<'a>> {
         if self.variant_type() == StoredVariants::Bool {
-            self.variant().map(|u| Bool::init_from_table(u))
+            self.variant().map(Bool::init_from_table)
         } else {
             None
         }
@@ -519,7 +518,7 @@ impl<'a> StoredData<'a> {
     #[allow(non_snake_case)]
     pub fn variant_as_uint_8(&self) -> Option<Uint8<'a>> {
         if self.variant_type() == StoredVariants::Uint8 {
-            self.variant().map(|u| Uint8::init_from_table(u))
+            self.variant().map(Uint8::init_from_table)
         } else {
             None
         }
@@ -529,7 +528,7 @@ impl<'a> StoredData<'a> {
     #[allow(non_snake_case)]
     pub fn variant_as_int_64(&self) -> Option<Int64<'a>> {
         if self.variant_type() == StoredVariants::Int64 {
-            self.variant().map(|u| Int64::init_from_table(u))
+            self.variant().map(Int64::init_from_table)
         } else {
             None
         }
@@ -539,7 +538,7 @@ impl<'a> StoredData<'a> {
     #[allow(non_snake_case)]
     pub fn variant_as_string(&self) -> Option<String<'a>> {
         if self.variant_type() == StoredVariants::String {
-            self.variant().map(|u| String::init_from_table(u))
+            self.variant().map(String::init_from_table)
         } else {
             None
         }
@@ -630,16 +629,16 @@ pub fn get_size_prefixed_root_as_stored_data<'a>(buf: &'a [u8]) -> StoredData<'a
     flatbuffers::get_size_prefixed_root::<StoredData<'a>>(buf)
 }
 
-pub const STORED_DATA_IDENTIFIER: &'static str = "SDFB";
+pub const STORED_DATA_IDENTIFIER: &str = "SDFB";
 
 #[inline]
 pub fn stored_data_buffer_has_identifier(buf: &[u8]) -> bool {
-    return flatbuffers::buffer_has_identifier(buf, STORED_DATA_IDENTIFIER, false);
+    flatbuffers::buffer_has_identifier(buf, STORED_DATA_IDENTIFIER, false)
 }
 
 #[inline]
 pub fn stored_data_size_prefixed_buffer_has_identifier(buf: &[u8]) -> bool {
-    return flatbuffers::buffer_has_identifier(buf, STORED_DATA_IDENTIFIER, true);
+    flatbuffers::buffer_has_identifier(buf, STORED_DATA_IDENTIFIER, true)
 }
 
 #[inline]

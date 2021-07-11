@@ -224,9 +224,9 @@ pub mod stored_data {
             )
         }
         #[inline]
-        pub fn set_range<'b>(
+        pub fn set_range(
             &mut self,
-            value: crate::storeddata_capnp::range::Reader<'b>,
+            value: crate::storeddata_capnp::range::Reader<'_>,
         ) -> ::capnp::Result<()> {
             ::capnp::traits::SetPointerBuilder::set_pointer_builder(
                 self.builder.get_pointer_field(2),

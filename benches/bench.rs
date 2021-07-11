@@ -1,10 +1,8 @@
-use std::io::Cursor;
-
 use abomonation_derive::Abomonation;
+use bytecheck::CheckBytes;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use prost::Message;
 use rkyv::Archive;
-use bytecheck::CheckBytes;
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code, unused_imports)]
@@ -20,9 +18,15 @@ pub mod proto3 {
 }
 
 #[derive(
-    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize, Archive,
+    Abomonation,
+    Serialize,
+    Deserialize,
+    simd_json_derive::Serialize,
+    simd_json_derive::Deserialize,
+    Archive,
+    rkyv::Serialize,
 )]
-#[archive(derive(CheckBytes))]
+#[archive_attr(derive(CheckBytes))]
 pub enum StoredVariants {
     YesNo(bool),
     Small(u8),
@@ -31,9 +35,15 @@ pub enum StoredVariants {
 }
 
 #[derive(
-    Abomonation, Serialize, Deserialize, simd_json_derive::Serialize, simd_json_derive::Deserialize, Archive,
+    Abomonation,
+    Serialize,
+    Deserialize,
+    simd_json_derive::Serialize,
+    simd_json_derive::Deserialize,
+    Archive,
+    rkyv::Serialize,
 )]
-#[archive(derive(CheckBytes))]
+#[archive_attr(derive(CheckBytes))]
 pub struct StoredData {
     pub variant: StoredVariants,
     pub opt_bool: Option<bool>,
@@ -42,13 +52,14 @@ pub struct StoredData {
 }
 
 fn compare_serde(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ser");
+    let mut group = c.benchmark_group("all");
     let value = StoredData {
         variant: StoredVariants::Signy(42),
         opt_bool: Some(false),
         vec_strs: vec!["Hello, Rust!".into()],
         range: 0..7878,
     };
+
     let mut buffer = Vec::with_capacity(4096);
     group.bench_function("sr.json", |b| {
         b.iter(|| {
@@ -159,6 +170,7 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("de.flexbuffers", |b| {
         b.iter(|| flexbuffers::from_slice::<'_, StoredData>(black_box(&flex)))
     });
+
     let mut fbb = flatbuffers::FlatBufferBuilder::new();
     group.bench_function("sr.flatbuffers", |b| {
         b.iter(|| {
@@ -337,50 +349,24 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("sr.proto3", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            let mut storeddata = proto3::StoredData::default();
-            storeddata.variant = Some(match &value.variant {
-                StoredVariants::YesNo(v) => proto3::stored_data::Variant::Yesno(*v),
-                StoredVariants::Small(v) => proto3::stored_data::Variant::Small((*v).into()),
-                StoredVariants::Signy(v) => proto3::stored_data::Variant::Signy(*v),
-                StoredVariants::Stringy(v) => proto3::stored_data::Variant::Stringy(v.clone()),
-            });
-            storeddata.opt_bool = match value.opt_bool {
-                Some(v) => Some(proto3::stored_data::OptBool::Value(v)),
-                None => None
-            };
-            storeddata.vec_strs = value.vec_strs.clone();
-            storeddata.range = Some(
-                proto3::Range {
+            let storeddata = proto3::StoredData {
+                variant: Some(match &value.variant {
+                    StoredVariants::YesNo(v) => proto3::stored_data::Variant::Yesno(*v),
+                    StoredVariants::Small(v) => proto3::stored_data::Variant::Small((*v).into()),
+                    StoredVariants::Signy(v) => proto3::stored_data::Variant::Signy(*v),
+                    StoredVariants::Stringy(v) => proto3::stored_data::Variant::Stringy(v.clone()),
+                }),
+                opt_bool: value.opt_bool.map(proto3::stored_data::OptBool::Value),
+                vec_strs: value.vec_strs.clone(),
+                range: Some(proto3::Range {
                     start: value.range.start as u64,
-                    end: value.range.end as u64
-                }
-            );
+                    end: value.range.end as u64,
+                }),
+            };
             storeddata.encode(black_box(&mut buffer)).unwrap();
         })
     });
     println!("proto3: {} bytes", buffer.len());
-    group.bench_function("de.proto3", |b| {
-        b.iter(|| {
-            let storeddata = proto3::StoredData::decode(&mut Cursor::new(&buffer)).unwrap();
-            let variant = match &storeddata.variant.as_ref().unwrap() {
-                proto3::stored_data::Variant::Yesno(v) => StoredVariants::YesNo(*v),
-                proto3::stored_data::Variant::Small(v) => StoredVariants::Small(*v as u8),
-                proto3::stored_data::Variant::Signy(v) => StoredVariants::Signy(*v),
-                proto3::stored_data::Variant::Stringy(v) => StoredVariants::Stringy(v.to_string()),
-            };
-            let opt_bool = match &storeddata.opt_bool.as_ref() {
-                Some(proto3::stored_data::OptBool::Value(v)) => Some(*v),
-                None => None
-            };
-            let range = &storeddata.range.as_ref().unwrap();
-            StoredData {
-                variant: variant,
-                opt_bool: opt_bool,
-                vec_strs: storeddata.vec_strs,
-                range: (range.start as u64)..(range.end as u64)
-            }
-        })
-    });
 
     group.bench_function("sr.abomonation", |b| {
         b.iter(|| {
@@ -397,28 +383,33 @@ fn compare_serde(c: &mut Criterion) {
         })
     });
 
-    let mut rkyv_buffer = rkyv::Aligned([0u8; 4096]);
+    let mut rkyv_buffer = vec![0; 4096];
     let mut rkyv_pos = 0;
     let mut rkyv_len = 0;
     group.bench_function("sr.rkyv", |b| {
+        use rkyv::ser::Serializer;
         b.iter(|| {
-            use rkyv::{Write, WriteExt};
-
             black_box(&mut buffer).clear();
-            let mut writer = rkyv::ArchiveBuffer::new(&mut rkyv_buffer);
-            rkyv_pos = writer.archive(&value).unwrap();
+            let mut writer = rkyv::ser::serializers::AllocSerializer::<4096>::default();
+            rkyv_pos = writer.serialize_value(&value).unwrap();
             rkyv_len = writer.pos();
+            rkyv_buffer = writer.into_serializer().into_inner().into_vec();
         })
     });
     println!("rkyv: {} bytes", rkyv_len);
     group.bench_function("de.rkyv (unvalidated)", |b| {
         b.iter(|| {
-            black_box(unsafe { rkyv::archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos) });
+            black_box(unsafe {
+                rkyv::archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos)
+            });
         })
     });
     group.bench_function("de.rkyv (validated)", |b| {
         b.iter(|| {
-            black_box(rkyv::check_archive::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos).unwrap());
+            black_box(
+                rkyv::check_archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos)
+                    .unwrap(),
+            );
         })
     });
 
