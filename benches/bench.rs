@@ -367,6 +367,11 @@ fn compare_serde(c: &mut Criterion) {
         })
     });
     println!("proto3: {} bytes", buffer.len());
+    group.bench_function("de.proto3", |b| {
+        b.iter(|| {
+            proto3::StoredData::decode(black_box(black_box(buffer.as_slice()))).unwrap();
+        })
+    });
 
     group.bench_function("sr.abomonation", |b| {
         b.iter(|| {
