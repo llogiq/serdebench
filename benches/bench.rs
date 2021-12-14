@@ -25,13 +25,19 @@ pub mod proto3 {
     simd_json_derive::Deserialize,
     Archive,
     rkyv::Serialize,
+    minicbor::Encode,
+    minicbor::Decode,
 )]
 #[archive_attr(derive(CheckBytes))]
 pub enum StoredVariants {
-    YesNo(bool),
-    Small(u8),
-    Signy(i64),
-    Stringy(String),
+    #[b(0)]
+    YesNo(#[b(0)] bool),
+    #[b(1)]
+    Small(#[b(0)] u8),
+    #[b(2)]
+    Signy(#[b(0)] i64),
+    #[b(3)]
+    Stringy(#[b(0)] String),
 }
 
 #[derive(
@@ -42,12 +48,18 @@ pub enum StoredVariants {
     simd_json_derive::Deserialize,
     Archive,
     rkyv::Serialize,
+    minicbor::Encode,
+    minicbor::Decode,
 )]
 #[archive_attr(derive(CheckBytes))]
 pub struct StoredData {
+    #[b(0)]
     pub variant: StoredVariants,
+    #[b(1)]
     pub opt_bool: Option<bool>,
+    #[b(2)]
     pub vec_strs: Vec<String>,
+    #[b(3)]
     pub range: std::ops::Range<u64>,
 }
 
@@ -139,12 +151,12 @@ fn compare_serde(c: &mut Criterion) {
     group.bench_function("sr.cbor", |b| {
         b.iter(|| {
             black_box(&mut buffer).clear();
-            serde_cbor::to_writer(black_box(&mut buffer), black_box(&value))
+            minicbor::encode(black_box(&value), black_box(&mut buffer))
         })
     });
     println!("cbor: {} bytes", buffer.len());
     group.bench_function("de.cbor", |b| {
-        b.iter(|| serde_cbor::from_slice::<'_, StoredData>(black_box(&buffer)))
+        b.iter(|| minicbor::decode::<StoredData>(black_box(buffer.as_slice())))
     });
     let mut bytes = [0u8; 512];
     group.bench_function("sr.postcard", |b| {
