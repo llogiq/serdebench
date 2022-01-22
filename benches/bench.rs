@@ -400,31 +400,39 @@ fn compare_serde(c: &mut Criterion) {
         })
     });
 
-    let mut rkyv_buffer = vec![0; 4096];
-    let mut rkyv_pos = 0;
-    let mut rkyv_len = 0;
+    const RKYV_BUFFER_LEN: usize = 128;
+    const RKYV_SCRATCH_LEN: usize = 128;
+
+    let mut rkyv_buffer = rkyv::AlignedVec::with_capacity(RKYV_BUFFER_LEN);
+    let mut rkyv_scratch = rkyv::AlignedVec::with_capacity(RKYV_SCRATCH_LEN);
+    rkyv_scratch.extend_from_slice(&[0; RKYV_SCRATCH_LEN]);
+
     group.bench_function("sr.rkyv", |b| {
         use rkyv::ser::Serializer;
         b.iter(|| {
-            black_box(&mut buffer).clear();
-            let mut writer = rkyv::ser::serializers::AllocSerializer::<4096>::default();
-            rkyv_pos = writer.serialize_value(&value).unwrap();
-            rkyv_len = writer.pos();
-            rkyv_buffer = writer.into_serializer().into_inner().into_vec();
+            use rkyv::ser::serializers::{CompositeSerializer, AlignedSerializer, BufferScratch};
+
+            rkyv_buffer.clear();
+            let mut serializer = CompositeSerializer::new(
+                AlignedSerializer::new(black_box(&mut rkyv_buffer)),
+                BufferScratch::new(black_box(&mut rkyv_scratch)),
+                rkyv::Infallible,
+            );
+            black_box(serializer.serialize_value(black_box(&value)).unwrap());
         })
     });
-    println!("rkyv: {} bytes", rkyv_len);
+    println!("rkyv: {} bytes", rkyv_buffer.len());
     group.bench_function("de.rkyv (unvalidated)", |b| {
         b.iter(|| {
             black_box(unsafe {
-                rkyv::archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos)
+                rkyv::archived_root::<StoredData>(black_box(rkyv_buffer.as_ref()))
             });
         })
     });
     group.bench_function("de.rkyv (validated)", |b| {
         b.iter(|| {
             black_box(
-                rkyv::check_archived_value::<StoredData>(black_box(rkyv_buffer.as_ref()), rkyv_pos)
+                rkyv::check_archived_root::<StoredData>(black_box(rkyv_buffer.as_ref()))
                     .unwrap(),
             );
         })

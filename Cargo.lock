@@ -124,20 +124,19 @@ checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
 
 [[package]]
 name = "bytecheck"
-version = "0.6.1"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4a86222e94be8d803d74c9672863650b8ca3dfd570ae34eedf3bf06b4ec6d02"
+checksum = "314889ea31cda264cb7c3d6e6e5c9415a987ecb0e72c17c00d36fbb881d34abe"
 dependencies = [
  "bytecheck_derive",
  "ptr_meta",
- "simdutf8",
 ]
 
 [[package]]
 name = "bytecheck_derive"
-version = "0.6.1"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eca2aa1c7a399e903bc1127f483cd705216ee7e2b7750e374af125a59e9acef"
+checksum = "4a2b3b92c135dae665a6f760205b89187638e83bed17ef3e44e83c712cf30600"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -935,18 +934,18 @@ dependencies = [
 
 [[package]]
 name = "rend"
-version = "0.3.1"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90b1d060a116ee1cf2522965825bed81136d04df7c731e211cd46dbd1107eab1"
+checksum = "79af64b4b6362ffba04eef3a4e10829718a4896dac19daa741851c86781edf95"
 dependencies = [
  "bytecheck",
 ]
 
 [[package]]
 name = "rkyv"
-version = "0.7.1"
+version = "0.7.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "296b6a81d0008773f1b808ab6988d6c7ee697bd8e7079090ff8957fe3488c8bf"
+checksum = "49a37de5dfc60bae2d94961dacd03c7b80e426b66a99fa1b17799570dbdd8f96"
 dependencies = [
  "bytecheck",
  "hashbrown 0.11.2",
@@ -958,9 +957,9 @@ dependencies = [
 
 [[package]]
 name = "rkyv_derive"
-version = "0.7.1"
+version = "0.7.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01eb28d78a764a0e993f6ac18e143ae8329ae183c6aeaea403a6e558c1ea93ff"
+checksum = "719d447dd0e84b23cee6cb5b32d97e21efb112a3e3c636c8da36647b938475a1"
 dependencies = [
  "proc-macro2",
  "quote",

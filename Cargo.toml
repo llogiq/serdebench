@@ -22,7 +22,7 @@ capnp = "0.14.0"
 simd-json = "0.4.6"
 simd-json-derive = "0.2.2"
 prost = "0.8"
-rkyv = { version = "0.7.1", features = ["validation"] }
+rkyv = { version = "0.7.29", features = ["validation"] }
 bytecheck = { version = "0.6.1" }
 minicbor = {version = "0.12.0", features = ["std", "derive"]}
 
