@@ -260,7 +260,7 @@ fn compare_serde(c: &mut Criterion) {
     println!("capnproto.unpacked: {} bytes", buffer.len());
     group.bench_function("de.capnproto.unpacked", |b| {
         b.iter(|| {
-            let message_reader = capnp::serialize::read_message_from_flat_slice(
+            let message_reader = capnp::serialize::read_message_from_flat_slice_no_alloc(
                 &mut black_box(buffer.as_slice()),
                 Default::default(),
             )
