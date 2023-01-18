@@ -157,9 +157,9 @@ checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
 name = "capnp"
-version = "0.14.7"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e94e1364fccd72a72985acce20e240d419935e2debf0b004fd8821ce3720e2f4"
+checksum = "35400c6acb55f1a91e6843beca189aba6bccd3c11fae5a7c0288fe5a1c3da822"
 
 [[package]]
 name = "cast"
